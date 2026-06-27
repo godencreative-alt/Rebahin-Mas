@@ -9,11 +9,17 @@ const AdultCard = ({ item }) => {
   const videoUrl = item.videoUrl;
   const duration = item.duration;
   const views = item.views;
+  const source = item.source;
+  const id = item.id;
 
   const handleClick = () => {
     if (videoUrl) {
-      // Navigate to internal player page — stays on godenpg, no redirect to provider
-      const params = new URLSearchParams({ url: videoUrl, title });
+      // Navigate to internal player — fetches detail for direct video URL
+      const params = new URLSearchParams({
+        source: source || 'pornhub',
+        id: id || '',
+        title,
+      });
       window.location.href = `/adult/player?${params}`;
     }
   };

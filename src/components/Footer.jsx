@@ -34,7 +34,13 @@ const Footer = () => {
           </div>
 
           {/* Credit Area */}
-          <div className="text-center md:text-right">
+          <div className="text-center md:text-right space-y-3">
+            <Link
+              to="/adult"
+              className="inline-block px-4 py-2 bg-[#DC2626] border-[2px] border-black font-black uppercase italic text-xs text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:bg-red-700 transition-colors"
+            >
+              🔞 Adult Zone (21+)
+            </Link>
             <p className="font-bold text-[10px] text-gray-400 uppercase tracking-widest dark:text-gray-400">
               Crafted with Power by Masfiq - Informatics UNRAM
             </p>

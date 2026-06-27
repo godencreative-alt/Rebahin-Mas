@@ -18,13 +18,36 @@ const CategoryPage = ({ config }) => {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [comicType, setComicType] = useState('');
+  const [selectedGenre, setSelectedGenre] = useState('');
   const [genres, setGenres] = useState([]);
   const { action, title, subtitle, accent, badge } = config || {};
   const headingAccent = accent || '#FF0000';
   const headingBadge = badge || 'SERIES';
   const isComic = action === 'komik';
+  const isAnimeOrDonghua = action === 'anime' || action === 'donghua';
 
-  // Fetch genre list untuk komik (sekali saat mount komik)
+  // Fetch genre list untuk anime/donghua
+  useEffect(() => {
+    if (!isAnimeOrDonghua) return;
+    const loadGenres = async () => {
+      try {
+        const res = await fetch('/api/genres');
+        const json = await res.json();
+        if (json?.data) {
+          // Filter genre untuk tipe ini
+          const filtered = json.data.filter(g =>
+            action === 'anime' ? g.animeCount > 0 : g.donghuaCount > 0
+          );
+          setGenres(filtered);
+        }
+      } catch (e) {
+        console.error('Failed to load genres:', e);
+      }
+    };
+    loadGenres();
+  }, [action, isAnimeOrDonghua]);
+
+  // Fetch genre list untuk komik
   useEffect(() => {
     if (!isComic) return;
     api.getComicGenres().then((g) => setGenres(Array.isArray(g) ? g : []));
@@ -32,16 +55,36 @@ const CategoryPage = ({ config }) => {
 
   // Reset page saat ganti filter
   useEffect(() => {
-    if (isComic) setPage(1);
+    if (isComic) {
+      setPage(1);
+      setSelectedGenre('');
+    }
   }, [comicType, isComic]);
+
+  // Reset page saat genre berubah
+  useEffect(() => {
+    setPage(1);
+  }, [selectedGenre]);
 
   useEffect(() => {
     if (!action) return;
     const fetchData = async () => {
       setLoading(true);
-      const response = isComic
-        ? await api.getComics(page, comicType)
-        : await api.getCategory(action, page);
+      let response;
+      if (isComic) {
+        response = await api.getComics(page, comicType);
+      } else if (isAnimeOrDonghua) {
+        const apiFn = action === 'anime' ? api.getAnimeLatest : api.getDonghuaLatest;
+        response = await apiFn(page);
+        // Apply genre filter client-side
+        if (selectedGenre) {
+          response.data = response.data.filter(item =>
+            item.genres?.some(g => g.slug === selectedGenre || g === selectedGenre)
+          );
+        }
+      } else {
+        response = await api.getCategory(action, page);
+      }
       if (response.success) {
         setItems(response.data);
       }
@@ -49,7 +92,7 @@ const CategoryPage = ({ config }) => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
     fetchData();
-  }, [action, page, comicType, isComic]);
+  }, [action, page, comicType, selectedGenre, isComic, isAnimeOrDonghua]);
 
   if (!config) {
     return (
@@ -88,7 +131,7 @@ const CategoryPage = ({ config }) => {
           </div>
         </div>
 
-        {/* Filter bar — hanya komik */}
+        {/* Filter bar — komik */}
         {isComic && (
           <div className="mb-10 flex flex-col gap-4">
             <div className="flex flex-wrap gap-3">
@@ -111,16 +154,65 @@ const CategoryPage = ({ config }) => {
                 <span className="text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400 mr-1">
                   Genre:
                 </span>
+                <button
+                  onClick={() => setSelectedGenre('')}
+                  className={`px-2 py-0.5 text-[10px] font-bold uppercase border border-black transition-colors ${
+                    !selectedGenre
+                      ? 'bg-black text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-600'
+                  }`}
+                >
+                  All
+                </button>
                 {genres.slice(0, 18).map((g) => (
-                  <span
+                  <button
                     key={g.slug}
-                    className="px-2 py-0.5 text-[10px] font-bold uppercase border border-black bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-600"
+                    onClick={() => setSelectedGenre(g.slug)}
+                    className={`px-2 py-0.5 text-[10px] font-bold uppercase border border-black transition-colors ${
+                      selectedGenre === g.slug
+                        ? 'bg-black text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-600'
+                    }`}
                   >
-                    {g.name} <span className="text-gray-400">{g.count}</span>
-                  </span>
+                    {g.name}
+                  </button>
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Genre filter bar — anime/donghua */}
+        {isAnimeOrDonghua && genres.length > 0 && (
+          <div className="mb-10">
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400 mr-1">
+                Genre:
+              </span>
+              <button
+                onClick={() => setSelectedGenre('')}
+                className={`px-3 py-1 text-xs font-black uppercase border-[2px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${
+                  !selectedGenre
+                    ? 'bg-black text-white'
+                    : 'bg-white text-black hover:bg-yellow-300 dark:bg-slate-900 dark:text-white'
+                }`}
+              >
+                All
+              </button>
+              {genres.map((g) => (
+                <button
+                  key={g.slug}
+                  onClick={() => setSelectedGenre(g.slug)}
+                  className={`px-3 py-1 text-xs font-black uppercase border-[2px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${
+                    selectedGenre === g.slug
+                      ? 'bg-black text-white'
+                      : 'bg-white text-black hover:bg-yellow-300 dark:bg-slate-900 dark:text-white'
+                  }`}
+                >
+                  {g.name}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

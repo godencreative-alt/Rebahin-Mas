@@ -1,42 +1,97 @@
 import { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Heart } from 'lucide-react';
-import { api } from '../services/api';
-import MovieCard from '../components/MovieCard';
+import { ChevronLeft, ChevronRight, Heart, AlertTriangle } from 'lucide-react';
+import AdultCard from '../components/AdultCard';
 import Loading from '../components/Loading';
-import { pickDetailPath } from '../lib/utils';
 
-const SOURCES = [
-  { key: 'pornhub', label: 'Pornhub' },
-  { key: 'eporner', label: 'Eporner' },
-  { key: 'xvideos', label: 'Xvideos' },
-  { key: 'xhamster', label: 'Xhamster' },
-  { key: 'txxx', label: 'Txxx' },
-  { key: 'xnxx', label: 'Xnxx' },
+const GENRE_TABS = [
+  { key: 'popular', label: 'Popular' },
+  { key: 'latest', label: 'Latest' },
+  { key: 'asian', label: 'Asian' },
+  { key: 'indonesian', label: 'Indonesia' },
+  { key: 'jav', label: 'JAV' },
 ];
+
+const AgeGate = ({ onConfirm }) => (
+  <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4">
+    <div className="max-w-md w-full bg-white dark:bg-slate-900 border-4 border-red-600 p-8 text-center rotate-1">
+      <div className="w-20 h-20 mx-auto mb-6 bg-red-600 border-4 border-black flex items-center justify-center">
+        <AlertTriangle className="w-12 h-12 text-white" />
+      </div>
+      <h1 className="text-4xl font-black uppercase italic mb-4 tracking-tight">21+ Only</h1>
+      <p className="text-lg font-bold text-gray-600 dark:text-gray-300 mb-8 uppercase tracking-wide">
+        Konten ini hanya untuk dewasa.<br />
+        Anda harus berusia 21 tahun atau lebih untuk melanjutkan.
+      </p>
+      <div className="space-y-4">
+        <button
+          onClick={onConfirm}
+          className="w-full py-4 px-6 bg-red-600 border-4 border-black font-black uppercase italic text-xl text-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:bg-red-700 active:translate-x-2 active:translate-y-2 active:shadow-none transition-all"
+        >
+          Saya berusia 21+ tahun
+        </button>
+        <button
+          onClick={() => window.location.href = '/'}
+          className="w-full py-3 px-6 bg-white border-4 border-black font-black uppercase italic text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-100 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all dark:bg-slate-800 dark:text-white"
+        >
+          Saya masih di bawah umur
+        </button>
+      </div>
+      <p className="mt-6 text-xs text-gray-400 font-bold uppercase">
+        Dengan melanjutkan, Anda menyatakan bahwa Anda berusia legal di wilayah Anda.
+      </p>
+    </div>
+  </div>
+);
 
 const AdultPage = () => {
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [source, setSource] = useState('pornhub');
   const [total, setTotal] = useState(0);
+  const [verified, setVerified] = useState(false);
+  const [activeTab, setActiveTab] = useState('popular');
 
-  useEffect(() => { setPage(1); }, [source]);
-
+  // Cek age gate dari localStorage
   useEffect(() => {
+    setVerified(localStorage.getItem('adult_verified') === 'true');
+  }, []);
+
+  const handleAgeConfirm = () => {
+    localStorage.setItem('adult_verified', 'true');
+    setVerified(true);
+  };
+
+  // Reset page saat ganti tab
+  useEffect(() => { setPage(1); }, [activeTab]);
+
+  // Fetch data
+  useEffect(() => {
+    if (!verified) return;
+
     const fetchData = async () => {
       setLoading(true);
-      const json = await fetch(`/api/adult/${source}?page=${page}`).then(r => r.json());
-      if (json?.data) {
-        setItems(json.data);
-        setTotal(json.total ?? 0);
+      let url = `/api/adult/${activeTab}`;
+      if (activeTab !== 'popular' && activeTab !== 'latest') {
+        url = `/api/adult/genre/${activeTab}`;
+      }
+      url += `?page=${page}`;
+
+      try {
+        const json = await fetch(url).then(r => r.json());
+        setItems(json?.data || []);
+        setTotal(json?.total ?? json?.data?.length ?? 0);
+      } catch {
+        setItems([]);
+        setTotal(0);
       }
       setLoading(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
-    fetchData();
-  }, [source, page]);
 
+    fetchData();
+  }, [verified, activeTab, page]);
+
+  if (!verified) return <AgeGate onConfirm={handleAgeConfirm} />;
   if (loading) return <Loading />;
 
   return (
@@ -50,24 +105,24 @@ const AdultPage = () => {
             </div>
             <div>
               <h1 className="text-4xl md:text-5xl font-black uppercase italic tracking-tighter">Adult Zone</h1>
-              <p className="mt-2 font-bold uppercase tracking-widest text-xs text-gray-500">{total} video — 6 sumber</p>
+              <p className="mt-2 font-bold uppercase tracking-widest text-xs text-gray-500">{total} video</p>
             </div>
           </div>
         </div>
 
-        {/* Source tabs */}
-        <div className="mb-8 flex flex-wrap gap-3">
-          {SOURCES.map((s) => (
+        {/* Genre tabs */}
+        <div className="mb-8 flex flex-wrap gap-2">
+          {GENRE_TABS.map((tab) => (
             <button
-              key={s.key}
-              onClick={() => setSource(s.key)}
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
               className={`px-4 py-2 border-[3px] border-black font-black uppercase italic text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all active:translate-x-1 active:translate-y-1 active:shadow-none ${
-                source === s.key
+                activeTab === tab.key
                   ? 'bg-[#DC2626] text-white'
                   : 'bg-white text-black hover:bg-yellow-300 dark:bg-slate-900 dark:text-white'
               }`}
             >
-              {s.label}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -75,15 +130,10 @@ const AdultPage = () => {
         {/* Grid */}
         {items.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 mb-16">
-              {items.map((item, idx) => {
-                const key = item.id ?? item.slug ?? idx;
-                return (
-                  <div key={key} className={idx % 2 === 0 ? 'rotate-1' : '-rotate-1'}>
-                    <MovieCard movie={item} />
-                  </div>
-                );
-              })}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 mb-16">
+              {items.map((item, idx) => (
+                <AdultCard key={item.id || idx} item={item} />
+              ))}
             </div>
 
             {/* Pagination */}
@@ -109,7 +159,7 @@ const AdultPage = () => {
         ) : (
           <div className="text-center py-32 bg-white border-[4px] border-black shadow-[10px_10px_0px_0px_rgba(0,0,0,1)]">
             <h2 className="text-5xl font-black uppercase italic mb-4">No Content</h2>
-            <p className="text-xl font-bold text-gray-500">Gak ada video untuk sumber ini.</p>
+            <p className="text-xl font-bold text-gray-500">Gak ada video untuk kategori ini.</p>
           </div>
         )}
       </div>

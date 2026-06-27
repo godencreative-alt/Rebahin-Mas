@@ -4,26 +4,44 @@ import MovieCard from '../components/MovieCard';
 import Loading from '../components/Loading';
 import { ChevronLeft, ChevronRight, Tv } from 'lucide-react';
 import { pickDetailPath } from '../lib/utils';
-import { cn } from '../lib/utils'; // Pastikan import cn
+import { cn } from '../lib/utils';
+
+const FILTERS = [
+  { key: 'latest', label: 'Latest' },
+  { key: 'ongoing', label: 'Ongoing' },
+  { key: 'completed', label: 'Completed' },
+  { key: 'popular', label: 'Popular' },
+];
 
 const Series = () => {
   const [series, setSeries] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('latest');
+
+  useEffect(() => { setPage(1); }, [filter]);
 
   useEffect(() => {
     const fetchSeries = async () => {
       setLoading(true);
-      const response = await api.getSeries(page);
-      if (response.success) {
-        setSeries(response.data);
+      const response = await api.getDonghuaLatest(page);
+      if (filter !== 'latest') {
+        const filterFn = {
+          ongoing: api.getDonghuaOngoing,
+          completed: api.getDonghuaCompleted,
+          popular: api.getDonghuaPopular,
+        }[filter];
+        if (filterFn) {
+          const r = await filterFn(page);
+          if (r.success) { setSeries(r.data); setLoading(false); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+        }
       }
+      if (response.success) { setSeries(response.data); }
       setLoading(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
-
     fetchSeries();
-  }, [page]);
+  }, [page, filter]);
 
   if (loading) return <Loading />;
 
@@ -48,6 +66,24 @@ const Series = () => {
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Filter tabs */}
+        <div className="mb-8 flex flex-wrap gap-3">
+          {FILTERS.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={cn(
+                "px-4 py-2 border-[3px] border-black font-black uppercase italic text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all active:translate-x-1 active:translate-y-1 active:shadow-none",
+                filter === f.key
+                  ? 'bg-[#FF00FF] text-white'
+                  : 'bg-white text-black hover:bg-yellow-300 dark:bg-slate-900 dark:text-white'
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
 
         {/* Series Grid */}

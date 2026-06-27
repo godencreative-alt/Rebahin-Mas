@@ -5,24 +5,47 @@ import Loading from '../components/Loading'; // Menggunakan Loading comic kita
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { pickDetailPath } from '../lib/utils';
 
+const FILTERS = [
+  { key: 'latest', label: 'Latest' },
+  { key: 'ongoing', label: 'Ongoing' },
+  { key: 'completed', label: 'Completed' },
+  { key: 'popular', label: 'Popular' },
+  { key: 'movie', label: 'Movie' },
+];
+
 const Movies = () => {
   const [movies, setMovies] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('latest');
+
+  useEffect(() => { setPage(1); }, [filter]);
 
   useEffect(() => {
     const fetchMovies = async () => {
       setLoading(true);
-      const response = await api.getMovies(page);
-      if (response.success) {
-        setMovies(response.data);
+      const response = await api.getAnimeLatest(page);
+      if (filter !== 'latest') {
+        // Only call filter endpoint if not latest (getAnimeLatest is latest)
+        const filterFn = {
+          ongoing: api.getAnimeOngoing,
+          completed: api.getAnimeCompleted,
+          popular: api.getAnimePopular,
+          movie: api.getAnimeMovie,
+          serial: api.getAnimeSerial,
+        }[filter];
+        if (filterFn) {
+          const r = await filterFn(page);
+          if (r.success) { setMovies(r.data); setLoading(false); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+        }
       }
+      if (response.success) { setMovies(response.data); }
       setLoading(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     fetchMovies();
-  }, [page]);
+  }, [page, filter]);
 
   if (loading) return <Loading />;
 
@@ -42,6 +65,23 @@ const Movies = () => {
               Discover the latest and greatest action!
             </p>
           </div>
+        </div>
+
+        {/* Filter tabs */}
+        <div className="mb-8 flex flex-wrap gap-3">
+          {FILTERS.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={`px-4 py-2 border-[3px] border-black font-black uppercase italic text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all active:translate-x-1 active:translate-y-1 active:shadow-none ${
+                filter === f.key
+                  ? 'bg-[#FF0000] text-white'
+                  : 'bg-white text-black hover:bg-yellow-300 dark:bg-slate-900 dark:text-white'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
 
         {/* Movies Grid */}

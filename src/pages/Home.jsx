@@ -17,8 +17,8 @@ const Home = () => {
     const fetchData = async () => {
       setLoading(true);
       const [homeRes, trendingRes] = await Promise.all([
-        api.getHome(),
-        api.getTrending()
+        api.getAnimeLatest(),
+        api.getDonghuaPopular()
       ]);
       
       if (homeRes.success) setHomeData(homeRes.data);

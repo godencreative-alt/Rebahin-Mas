@@ -15,7 +15,7 @@ export const Trending = () => {
   useEffect(() => {
     const fetchTrending = async () => {
       setLoading(true);
-      const response = await api.getTrending();
+      const response = await api.getDonghuaPopular();
       if (response.success) {
         setTrending(response.data);
       }

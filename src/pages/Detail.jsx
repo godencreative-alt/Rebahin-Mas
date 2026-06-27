@@ -44,12 +44,18 @@ const Detail = () => {
       setLoading(true);
       const response = await api.getDetail(slug);
       if (response.success) {
-        setDetail(response.data);
+        const d = response.data;
+        // Komik → redirect ke /comic/{code} (ComicReader punya sendiri)
+        if (d.code && String(d.code).startsWith('comic:')) {
+          navigate(`/comic/${encodeURIComponent(d.code)}`, { replace: true });
+          return;
+        }
+        setDetail(d);
       }
       setLoading(false);
     };
     fetchDetail();
-  }, [slug]);
+  }, [slug, navigate]);
 
   if (loading) return <Loading />;
 

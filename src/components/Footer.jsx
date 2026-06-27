@@ -1,4 +1,4 @@
-import { Film, Github, Instagram, Facebook, Database } from 'lucide-react';
+import { Film, Database } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Footer = () => {
@@ -12,8 +12,8 @@ const Footer = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 items-center text-center md:text-left">
-          
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center text-center md:text-left">
+
           {/* Brand Column */}
           <div className="space-y-4">
             <Link to="/" className="inline-flex items-center space-x-3 group">
@@ -21,61 +21,21 @@ const Footer = () => {
                 <Film className="w-7 h-7 text-white" />
               </div>
               <span className="text-3xl font-black uppercase italic tracking-tighter text-black dark:text-white">
-                REBAHIN-MAS
+                GODENPG-WATCH
               </span>
             </Link>
             <p className="font-bold text-sm uppercase leading-tight text-gray-600 max-w-xs mx-auto md:mx-0 dark:text-gray-300">
               Streaming platform gratis dengan vibe komik modern. Nonton film tanpa ribet!
             </p>
             {/* API Source Credit */}
-            <a 
-              href="https://zeldvorik.ru/rebahin21" 
-              target="_blank" 
-              className="inline-flex items-center gap-2 text-[10px] font-black text-gray-400 hover:text-black uppercase transition-colors dark:text-gray-300"
-            >
-              <Database size={12} /> Legacy API Source: Zeldvorik
-            </a>
+            <span className="inline-flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase dark:text-gray-300">
+              <Database size={12} /> API GODENPLAYGROUND
+            </span>
           </div>
 
-          {/* Social Media - Your Personal Links */}
-          <div className="flex justify-center gap-4">
-            {[
-              { 
-                icon: Github, 
-                color: 'bg-[#00FFFF]', 
-                url: 'https://github.com/F1kro' 
-              },
-              { 
-                icon: Instagram, 
-                color: 'bg-[#FF00FF]', 
-                url: 'https://instagram.com/_fiqro' 
-              },
-              { 
-                icon: Facebook, 
-                color: 'bg-[#FFD700]', 
-                url: 'https://facebook.com/fikro.najiah.7' 
-              }
-            ].map((social, idx) => (
-              <a 
-                key={idx}
-                href={social.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`${social.color} p-4 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center`}
-              >
-                <social.icon size={24} strokeWidth={3} className="text-black" />
-              </a>
-            ))}
-          </div>
-
-          {/* Copyright Area */}
+          {/* Credit Area */}
           <div className="text-center md:text-right">
-            <div className="inline-block border-2 border-black bg-yellow-300 p-2 rotate-1 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-              <p className="font-black text-xs uppercase italic text-black dark:text-white">
-                © 2026 REBAHIN-MAS. ALL RIGHTS RESERVED.
-              </p>
-            </div>
-            <p className="mt-4 font-bold text-[10px] text-gray-400 uppercase tracking-widest dark:text-gray-400">
+            <p className="font-bold text-[10px] text-gray-400 uppercase tracking-widest dark:text-gray-400">
               Crafted with Power by Masfiq - Informatics UNRAM
             </p>
           </div>

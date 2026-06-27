@@ -11,7 +11,12 @@ const MovieCard = ({ movie }) => {
   const detailLink = detailSlug ? `/detail/${detailSlug}` : '/';
   const releaseYear = movie.year ?? movie.release_year ?? movie.release ?? movie.pub_year;
   const rating = movie.rating ?? movie.rate ?? movie.rating_score;
-  const badgeType = movie.type ?? (movie.episodes && movie.episodes.length ? 'series' : 'movie');
+  // Komik: pakai comicType (manga/manhwa/manhua/adult) sebagai badge kalau ada.
+  // Anime/donghua: fallback type/series/movie.
+  const badgeType = movie.comicType
+    ? movie.comicType
+    : movie.type ?? (movie.episodes && movie.episodes.length ? 'series' : 'movie');
+  const isComicBadge = Boolean(movie.comicType);
 
   return (
     <Link
@@ -60,10 +65,12 @@ const MovieCard = ({ movie }) => {
         {/* Badges tetap muncul di atas placeholder */}
         <div className="absolute top-3 right-[-10px] rotate-12 group-hover:rotate-0 transition-transform">
           <span className={cn(
-            "px-3 py-1 text-[10px] font-black tracking-tighter border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
-            badgeType === 'movie' ? 'bg-[#00FFFF] text-black' : 'bg-[#FF00FF] text-white'
+            "px-3 py-1 text-[10px] font-black tracking-tighter border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase",
+            isComicBadge
+              ? (badgeType === 'adult' ? 'bg-red-600 text-white' : 'bg-[#00AAFF] text-white')
+              : badgeType === 'movie' ? 'bg-[#00FFFF] text-black' : 'bg-[#FF00FF] text-white'
           )}>
-            {badgeType === 'movie' ? 'MOVIE' : 'SERIES'}
+            {isComicBadge ? badgeType : (badgeType === 'movie' ? 'MOVIE' : 'SERIES')}
           </span>
         </div>
 

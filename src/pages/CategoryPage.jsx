@@ -5,19 +5,43 @@ import MovieCard from '../components/MovieCard';
 import Loading from '../components/Loading';
 import { pickDetailPath } from '../lib/utils';
 
+const COMIC_FILTERS = [
+  { key: '', label: 'All' },
+  { key: 'manga', label: 'Manga' },
+  { key: 'manhwa', label: 'Manhwa' },
+  { key: 'manhua', label: 'Manhua' },
+  { key: 'adult', label: 'Adult' },
+];
+
 const CategoryPage = ({ config }) => {
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [comicType, setComicType] = useState('');
+  const [genres, setGenres] = useState([]);
   const { action, title, subtitle, accent, badge } = config || {};
   const headingAccent = accent || '#FF0000';
   const headingBadge = badge || 'SERIES';
+  const isComic = action === 'komik';
+
+  // Fetch genre list untuk komik (sekali saat mount komik)
+  useEffect(() => {
+    if (!isComic) return;
+    api.getComicGenres().then((g) => setGenres(Array.isArray(g) ? g : []));
+  }, [isComic]);
+
+  // Reset page saat ganti filter
+  useEffect(() => {
+    if (isComic) setPage(1);
+  }, [comicType, isComic]);
 
   useEffect(() => {
     if (!action) return;
     const fetchData = async () => {
       setLoading(true);
-      const response = await api.getCategory(action, page);
+      const response = isComic
+        ? await api.getComics(page, comicType)
+        : await api.getCategory(action, page);
       if (response.success) {
         setItems(response.data);
       }
@@ -25,7 +49,7 @@ const CategoryPage = ({ config }) => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
     fetchData();
-  }, [action, page]);
+  }, [action, page, comicType, isComic]);
 
   if (!config) {
     return (
@@ -63,6 +87,42 @@ const CategoryPage = ({ config }) => {
             </div>
           </div>
         </div>
+
+        {/* Filter bar — hanya komik */}
+        {isComic && (
+          <div className="mb-10 flex flex-col gap-4">
+            <div className="flex flex-wrap gap-3">
+              {COMIC_FILTERS.map((f) => (
+                <button
+                  key={f.key || 'all'}
+                  onClick={() => setComicType(f.key)}
+                  className={`px-5 py-2 border-[3px] border-black font-black uppercase italic text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all active:translate-x-1 active:translate-y-1 active:shadow-none ${
+                    comicType === f.key
+                      ? 'bg-[#00AAFF] text-white'
+                      : 'bg-white text-black hover:bg-yellow-300 dark:bg-slate-900 dark:text-white'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            {genres.length > 0 && (
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400 mr-1">
+                  Genre:
+                </span>
+                {genres.slice(0, 18).map((g) => (
+                  <span
+                    key={g.slug}
+                    className="px-2 py-0.5 text-[10px] font-bold uppercase border border-black bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 dark:border-slate-600"
+                  >
+                    {g.name} <span className="text-gray-400">{g.count}</span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {items.length > 0 ? (
           <>

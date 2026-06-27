@@ -61,7 +61,7 @@ const Navbar = () => {
             </div>
             <div className="flex flex-col">
               <span className="text-base md:text-2xl font-black uppercase italic tracking-tighter text-black dark:text-white leading-none">
-                REBAHIN-MAS
+                GODENPG-WATCH
               </span>
               <span className="text-[7px] md:text-[8px] uppercase tracking-widest bg-yellow-300 border-[1.5px] md:border-2 border-black px-1 py-0.5 text-black font-black self-start">
                 By Masfiq

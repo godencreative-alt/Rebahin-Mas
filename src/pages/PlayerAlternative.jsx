@@ -5,6 +5,15 @@ import { Button } from '../components/ui/Button';
 import { cn, pickEpisodes, pickPlayerUrl } from '../lib/utils';
 import { api } from '../services/api';
 import { useTranslation } from '../lib/i18n';
+import HlsPlayer from '../components/players/HlsPlayer';
+import ComicReader from '../components/players/ComicReader';
+
+// Decide which player to render: comic reader, HLS, or iframe.
+const resolvePlayerMode = (mode, url) => {
+  if (mode === 'comic') return 'comic';
+  if (mode === 'hls' || /\.m3u8(\?|$)/i.test(url || '')) return 'hls';
+  return 'iframe';
+};
 
 const PlayerAlternative = () => {
   const navigate = useNavigate();
@@ -24,6 +33,13 @@ const PlayerAlternative = () => {
 
   const seasonParam = toNumberParam(searchParams.get('season'));
   const episodeParam = toNumberParam(searchParams.get('episode'));
+
+  const playerMode = resolvePlayerMode(searchParams.get('mode'), playerUrl);
+  // Comic pages: comma-separated image URLs passed via the `pages` param.
+  const comicPages = useMemo(() => {
+    const raw = searchParams.get('pages');
+    return raw ? raw.split(',').map((s) => s.trim()).filter(Boolean) : [];
+  }, [searchParams]);
 
   useEffect(() => {
     if (!detailPathParam) {
@@ -89,7 +105,8 @@ const PlayerAlternative = () => {
     }
   };
 
-  if (!playerUrl) return null;
+  // Comic mode has no single playerUrl; it relies on the pages param instead.
+  if (!playerUrl && playerMode !== 'comic') return null;
 
   return (
     <div className={cn("min-h-screen transition-colors duration-500", isTheaterMode ? "bg-black" : "bg-[var(--app-bg)]")}>
@@ -129,14 +146,16 @@ const PlayerAlternative = () => {
                 FULLSCREEN
               </Button>
 
-              <Button
-                onClick={() => window.open(playerUrl, '_blank')}
-                variant="outline"
-                className="flex items-center gap-2 border-2 border-black bg-white text-black font-black uppercase italic shadow-[3px_3px_0_0_rgba(0,0,0,1)] hover:bg-[#00FFFF] hover:shadow-none transition-all"
-              >
-                <ExternalLink className="w-4 h-4" />
-                <span className="text-xs hidden md:inline">Buka Tab Baru</span>
-              </Button>
+              {playerUrl && (
+                <Button
+                  onClick={() => window.open(playerUrl, '_blank')}
+                  variant="outline"
+                  className="flex items-center gap-2 border-2 border-black bg-white text-black font-black uppercase italic shadow-[3px_3px_0_0_rgba(0,0,0,1)] hover:bg-[#00FFFF] hover:shadow-none transition-all"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span className="text-xs hidden md:inline">Buka Tab Baru</span>
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -152,17 +171,25 @@ const PlayerAlternative = () => {
           id="player-container"
           className={cn(
             "relative bg-black border-[6px] border-black overflow-hidden touch-none",
-            isTheaterMode ? "aspect-video border-none" : "aspect-video shadow-[15px_15px_0_0_rgba(0,0,0,1)]"
+            playerMode === 'comic'
+              ? cn("overflow-y-auto", isTheaterMode ? "h-screen border-none" : "max-h-[80vh] shadow-[15px_15px_0_0_rgba(0,0,0,1)]")
+              : cn(isTheaterMode ? "aspect-video border-none" : "aspect-video shadow-[15px_15px_0_0_rgba(0,0,0,1)]")
           )}
         >
-          <iframe
-            src={playerUrl}
-            className="w-full h-full pointer-events-auto"
-            frameBorder="0"
-            allowFullScreen
-            sandbox="allow-same-origin allow-scripts allow-forms allow-presentation"
-            title="Video Player"
-          />
+          {playerMode === 'comic' ? (
+            <ComicReader pages={comicPages} className="min-h-full" />
+          ) : playerMode === 'hls' ? (
+            <HlsPlayer src={playerUrl} className="w-full h-full" />
+          ) : (
+            <iframe
+              src={playerUrl}
+              className="w-full h-full pointer-events-auto"
+              frameBorder="0"
+              allowFullScreen
+              sandbox="allow-same-origin allow-scripts allow-forms allow-presentation"
+              title="Video Player"
+            />
+          )}
         </div>
 
         {/* 3. EPISODE CONTROLS - FIX FONT DI DARK MODE */}

@@ -6,12 +6,14 @@ import Home from './pages/Home';
 import Movies from './pages/Movies';
 import Series from './pages/Series';
 import Detail from './pages/Detail';
+import ComicDetail from './pages/ComicDetail';
 import PlayerAlternative from './pages/PlayerAlternative';
 import { Trending, Search } from './pages/TrendingAndSearch';
 import CategoryPage from './pages/CategoryPage';
+import AdultPage from './pages/AdultPage';
 import { CATEGORY_PAGES } from './data/categoryConfig';
-import ScrollToTop from './components/ScrollToTop'; 
-import ScrollToTopButton from './components/ScrollToTopButton'; 
+import ScrollToTop from './components/ScrollToTop';
+import ScrollToTopButton from './components/ScrollToTopButton';
 import { useTheme } from './contexts/ThemeContext';
 import { cn } from './lib/utils';
 
@@ -50,10 +52,12 @@ function App() {
             <Route path="/series" element={<Series />} />
             <Route path="/trending" element={<Trending />} />
             <Route path="/search" element={<Search />} />
+            <Route path="/adult" element={<AdultPage />} />
             {CATEGORY_PAGES.map((config) => (
               <Route key={config.key} path={config.path} element={<CategoryPage config={config} />} />
             ))}
             <Route path="/detail/:slug" element={<Detail />} />
+            <Route path="/comic/*" element={<ComicDetail />} />
             <Route path="/player" element={<PlayerAlternative />} />
           </Routes>
         </main>

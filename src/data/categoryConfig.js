@@ -1,77 +1,38 @@
-import {
-  Sparkles,
-  MonitorPlay,
-  Tv2,
-  Globe,
-  Mic2,
-  SmilePlus
-} from 'lucide-react';
+import { Tv2, Sparkles, BookOpen, Heart } from 'lucide-react';
 
+// Kategori GODENPG v2: anime (Otakudesu) + donghua (Anichin) + komik (Vault).
 export const CATEGORY_PAGES = [
-  {
-    key: 'k-drama',
-    path: '/k-drama',
-    name: 'K-Drama',
-    action: 'kdrama',
-    title: 'K-Drama Spotlight',
-    subtitle: 'Fresh Korean series and films straight from the industry.',
-    accent: '#FF00FF',
-    badge: 'KOREAN',
-    icon: Sparkles
-  },
-  {
-    key: 'short-tv',
-    path: '/short-tv',
-    name: 'Short TV',
-    action: 'short-tv',
-    title: 'Short TV Hits',
-    subtitle: 'Bite-sized serials built for quick binges.',
-    accent: '#00BFAF',
-    badge: 'SHORT TV',
-    icon: MonitorPlay
-  },
   {
     key: 'anime',
     path: '/anime',
     name: 'Anime',
     action: 'anime',
     title: 'Anime Universe',
-    subtitle: 'Latest anime releases with crisp subtitles.',
+    subtitle: 'Anime terbaru dengan subtitle Indonesia.',
     accent: '#FF4500',
     badge: 'ANIME',
     icon: Tv2
   },
   {
-    key: 'adult-comedy',
-    path: '/adult-comedy',
-    name: 'Canda Dewasa',
-    action: 'adult-comedy',
-    title: 'Canda Dewasa',
-    subtitle: 'Komedi gede untuk penonton dewasa.',
-    accent: '#FFD700',
-    badge: 'R-RATED',
-    icon: SmilePlus
+    key: 'donghua',
+    path: '/donghua',
+    name: 'Donghua',
+    action: 'donghua',
+    title: 'Donghua Spotlight',
+    subtitle: 'Animasi Tiongkok pilihan, subtitle Indonesia.',
+    accent: '#FF00FF',
+    badge: 'DONGHUA',
+    icon: Sparkles
   },
   {
-    key: 'western-tv',
-    path: '/western-tv',
-    name: 'Western TV',
-    action: 'western-tv',
-    title: 'Western TV',
-    subtitle: 'Serial Barat klasik dan modern.',
-    accent: '#1E90FF',
-    badge: 'WESTERN',
-    icon: Globe
+    key: 'komik',
+    path: '/komik',
+    name: 'Komik',
+    action: 'komik',
+    title: 'Comic Vault',
+    subtitle: 'Manga, manhwa, manhua — baca online.',
+    accent: '#00AAFF',
+    badge: 'KOMIK',
+    icon: BookOpen
   },
-  {
-    key: 'indo-dub',
-    path: '/indo-dub',
-    name: 'Indo Dub',
-    action: 'indo-dub',
-    title: 'Indo Dub',
-    subtitle: 'Konten dengan dubbing Indonesia siap tayang.',
-    accent: '#FF5722',
-    badge: 'DUBBED',
-    icon: Mic2
-  }
 ];

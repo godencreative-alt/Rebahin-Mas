@@ -3,14 +3,6 @@ import { ChevronLeft, ChevronRight, Heart, AlertTriangle } from 'lucide-react';
 import AdultCard from '../components/AdultCard';
 import Loading from '../components/Loading';
 
-const GENRE_TABS = [
-  { key: 'popular', label: 'Popular' },
-  { key: 'latest', label: 'Latest' },
-  { key: 'asian', label: 'Asian' },
-  { key: 'indonesian', label: 'Indonesia' },
-  { key: 'jav', label: 'JAV' },
-];
-
 const AgeGate = ({ onConfirm }) => (
   <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4">
     <div className="max-w-md w-full bg-white dark:bg-slate-900 border-4 border-red-600 p-8 text-center rotate-1">
@@ -43,6 +35,9 @@ const AgeGate = ({ onConfirm }) => (
   </div>
 );
 
+// Genre tabs yang tidak butuh search keyword (agregat semua source)
+const SPECIAL_TABS = new Set(['popular', 'latest']);
+
 const AdultPage = () => {
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
@@ -50,11 +45,23 @@ const AdultPage = () => {
   const [total, setTotal] = useState(0);
   const [verified, setVerified] = useState(false);
   const [activeTab, setActiveTab] = useState('popular');
+  const [genres, setGenres] = useState([]);
 
   // Cek age gate dari localStorage
   useEffect(() => {
     setVerified(localStorage.getItem('adult_verified') === 'true');
   }, []);
+
+  // Fetch genre list
+  useEffect(() => {
+    if (!verified) return;
+    fetch('/api/adult/genres')
+      .then(r => r.json())
+      .then(json => {
+        if (json?.data) setGenres(json.data);
+      })
+      .catch(() => {});
+  }, [verified]);
 
   const handleAgeConfirm = () => {
     localStorage.setItem('adult_verified', 'true');
@@ -70,9 +77,11 @@ const AdultPage = () => {
 
     const fetchData = async () => {
       setLoading(true);
-      let url = `/api/adult/${activeTab}`;
-      if (activeTab !== 'popular' && activeTab !== 'latest') {
-        url = `/api/adult/genre/${activeTab}`;
+      let url;
+      if (SPECIAL_TABS.has(activeTab)) {
+        url = `/api/adult/${activeTab}`;
+      } else {
+        url = `/api/adult/genre/${encodeURIComponent(activeTab)}`;
       }
       url += `?page=${page}`;
 
@@ -110,19 +119,19 @@ const AdultPage = () => {
           </div>
         </div>
 
-        {/* Genre tabs */}
+        {/* Genre tabs — scroll horizontal on mobile */}
         <div className="mb-8 flex flex-wrap gap-2">
-          {GENRE_TABS.map((tab) => (
+          {genres.map((genre) => (
             <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              key={genre.slug}
+              onClick={() => setActiveTab(genre.slug)}
               className={`px-4 py-2 border-[3px] border-black font-black uppercase italic text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all active:translate-x-1 active:translate-y-1 active:shadow-none ${
-                activeTab === tab.key
+                activeTab === genre.slug
                   ? 'bg-[#DC2626] text-white'
                   : 'bg-white text-black hover:bg-yellow-300 dark:bg-slate-900 dark:text-white'
               }`}
             >
-              {tab.label}
+              {genre.name}
             </button>
           ))}
         </div>

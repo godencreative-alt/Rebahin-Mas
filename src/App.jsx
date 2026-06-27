@@ -11,6 +11,7 @@ import PlayerAlternative from './pages/PlayerAlternative';
 import { Trending, Search } from './pages/TrendingAndSearch';
 import CategoryPage from './pages/CategoryPage';
 import AdultPage from './pages/AdultPage';
+import AdultPlayer from './pages/AdultPlayer';
 import { CATEGORY_PAGES } from './data/categoryConfig';
 import ScrollToTop from './components/ScrollToTop';
 import ScrollToTopButton from './components/ScrollToTopButton';
@@ -53,6 +54,7 @@ function App() {
             <Route path="/trending" element={<Trending />} />
             <Route path="/search" element={<Search />} />
             <Route path="/adult" element={<AdultPage />} />
+            <Route path="/adult/player" element={<AdultPlayer />} />
             {CATEGORY_PAGES.map((config) => (
               <Route key={config.key} path={config.path} element={<CategoryPage config={config} />} />
             ))}

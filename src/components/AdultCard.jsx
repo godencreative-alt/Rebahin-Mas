@@ -12,7 +12,9 @@ const AdultCard = ({ item }) => {
 
   const handleClick = () => {
     if (videoUrl) {
-      window.open(videoUrl, '_blank', 'noopener,noreferrer');
+      // Navigate to internal player page — stays on godenpg, no redirect to provider
+      const params = new URLSearchParams({ url: videoUrl, title });
+      window.location.href = `/adult/player?${params}`;
     }
   };
 

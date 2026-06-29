@@ -26,12 +26,18 @@ const listResult = (json, page = 1) => ({
 // Detail v2 → tambahkan field datar yang dicari helper (detailPath bawa tipe utk link balik).
 // vault slug SUDAH punya prefix "anime:" / "donghua:", gunakan langsung.
 // DB slug (Otakudesu) TIDAK punya prefix, perlu prepend.
+// v2 API behavior:
+// - /anime/{slug} expects full vault slug WITH "anime:" prefix
+// - /donghua/{slug} expects BARE slug (no prefix)
+// - /komik/{code} expects full vault code with "comic:" prefix
 const makeDetailPath = (kind, slug) => {
-  if (!slug) return `${kind}:unknown`;
-  // vault slug already has prefix
+  if (!slug) return null; // no fallback to "unknown"
   if (slug.startsWith('anime:') || slug.startsWith('donghua:') || slug.startsWith('comic:')) {
-    return slug;
+    return slug; // already has prefix
   }
+  // DB donghua bare slug — keep bare so getDetail() strips prefix correctly
+  if (kind === 'donghua') return slug;
+  // DB anime or vault anime — add prefix
   return `${kind}:${slug}`;
 };
 
@@ -175,31 +181,26 @@ export const api = {
   // vault donghua slug: "donghua:slug" (2 segments, but might be more)
   getDetail: async (detailPath) => {
     if (!detailPath) return { success: false, data: null };
-    const parts = String(detailPath).split(':');
-    // Prefix anime/donghua: "anime:slug" atau "anime:tv:slug"
-    // v2 API expects slug WITH prefix (e.g. "anime:tv:texhnolyze-2003")
-    // Pass full detailPath to API, strip prefix only for shapeDetail kind detection
-    if (parts[0] === 'anime' || parts[0] === 'donghua') {
-      const kind = parts[0];
-      // For vault anime (3+ segments like "anime:tv:slug"), pass full slug with prefix
-      // For DB anime (2 segments like "anime:slug"), also pass with prefix
-      const slug = parts.slice(1).join(':');
-      // Re-prepend prefix since v2 API needs it
-      const apiSlug = `${kind}:${slug}`;
-      return shapeDetail(await safeGet(`/api/${kind}/${encodeURIComponent(apiSlug)}`), kind);
+    const str = String(detailPath);
+    // anime from vault: "anime:tv:slug" → pass as-is
+    if (str.startsWith('anime:')) {
+      return shapeDetail(await safeGet(`/api/${encodeURIComponent(str)}`), 'anime');
     }
-    // Prefix komik: full code (vault "comic:type:slug") — detailPath = code.
-    if (parts[0] === 'comic') {
-      const code = detailPath;
-      const json = await safeGet(`/api/komik/${encodeURIComponent(code)}`);
-      if (json?.data) return api.getComicDetail(code);
+    // donghua: "donghua:slug" → strip prefix, API expects bare slug
+    if (str.startsWith('donghua:')) {
+      const slug = str.slice(8); // remove "donghua:"
+      return shapeDetail(await safeGet(`/api/donghua/${encodeURIComponent(slug)}`), 'donghua');
     }
-    // slug polos → coba anime, donghua, lalu komik
-    const slug = detailPath;
-    const anime = await safeGet(`/api/anime/${encodeURIComponent(slug)}`);
-    if (anime?.data) return shapeDetail(anime, 'anime');
+    // comic: "comic:type:slug" → full code
+    if (str.startsWith('comic:')) {
+      return api.getComicDetail(str);
+    }
+    // Bare slug → try donghua first (DB), then anime vault
+    const slug = str;
     const donghua = await safeGet(`/api/donghua/${encodeURIComponent(slug)}`);
     if (donghua?.data) return shapeDetail(donghua, 'donghua');
+    const anime = await safeGet(`/api/anime/${encodeURIComponent(slug)}`);
+    if (anime?.data) return shapeDetail(anime, 'anime');
     const komik = await safeGet(`/api/komik/${encodeURIComponent(slug)}`);
     if (komik?.data) return api.getComicDetail(slug);
     return { success: false, data: null };

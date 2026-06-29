@@ -177,10 +177,16 @@ export const api = {
     if (!detailPath) return { success: false, data: null };
     const parts = String(detailPath).split(':');
     // Prefix anime/donghua: "anime:slug" atau "anime:tv:slug"
+    // v2 API expects slug WITH prefix (e.g. "anime:tv:texhnolyze-2003")
+    // Pass full detailPath to API, strip prefix only for shapeDetail kind detection
     if (parts[0] === 'anime' || parts[0] === 'donghua') {
       const kind = parts[0];
+      // For vault anime (3+ segments like "anime:tv:slug"), pass full slug with prefix
+      // For DB anime (2 segments like "anime:slug"), also pass with prefix
       const slug = parts.slice(1).join(':');
-      return shapeDetail(await safeGet(`/api/${kind}/${encodeURIComponent(slug)}`), kind);
+      // Re-prepend prefix since v2 API needs it
+      const apiSlug = `${kind}:${slug}`;
+      return shapeDetail(await safeGet(`/api/${kind}/${encodeURIComponent(apiSlug)}`), kind);
     }
     // Prefix komik: full code (vault "comic:type:slug") — detailPath = code.
     if (parts[0] === 'comic') {

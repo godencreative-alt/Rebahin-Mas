@@ -24,6 +24,17 @@ const listResult = (json, page = 1) => ({
 });
 
 // Detail v2 → tambahkan field datar yang dicari helper (detailPath bawa tipe utk link balik).
+// vault slug SUDAH punya prefix "anime:" / "donghua:", gunakan langsung.
+// DB slug (Otakudesu) TIDAK punya prefix, perlu prepend.
+const makeDetailPath = (kind, slug) => {
+  if (!slug) return `${kind}:unknown`;
+  // vault slug already has prefix
+  if (slug.startsWith('anime:') || slug.startsWith('donghua:') || slug.startsWith('comic:')) {
+    return slug;
+  }
+  return `${kind}:${slug}`;
+};
+
 const shapeDetail = (payload, kind) => {
   const d = payload?.data;
   if (!d) return { success: false, data: null };
@@ -44,7 +55,7 @@ const shapeDetail = (payload, kind) => {
     success: true,
     data: {
       ...d,
-      detailPath: `${kind}:${d.slug}`,
+      detailPath: makeDetailPath(kind, d.slug),
       seasons,
       episodes: flattenSeasonEps(seasons?.flatMap((s) => s?.episodes ?? []) ?? [], videoUrls, 1),
     },

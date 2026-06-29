@@ -23,32 +23,54 @@ const listResult = (json, page = 1) => ({
   total: json?.total,
 });
 
-// Ratakan episode v2 → bentuk yang dipakai pemutar watch.
-const flattenEpisodes = (episodes = []) =>
-  episodes.map((e) => {
-    const link = Array.isArray(e.links) ? e.links[0] : undefined;
-    return {
-      number: e.number,
-      episode: e.number,
-      season: 1,
-      name: e.name || `Episode ${e.number}`,
-      url: link?.url,
-      mode: link?.type === 'HLS' ? 'hls' : 'iframe',
-    };
-  });
-
 // Detail v2 → tambahkan field datar yang dicari helper (detailPath bawa tipe utk link balik).
 const shapeDetail = (payload, kind) => {
   const d = payload?.data;
   if (!d) return { success: false, data: null };
+  const videoUrls = d.videoUrls && typeof d.videoUrls === 'object' ? d.videoUrls : {};
+  // Normalisasi seasons[].episodes[]: inject url stream + number + season int.
+  // pickEpisodes (utils.js) baca detail.seasons → episode HARUS dapat field url/number di sini.
+  const seasons = Array.isArray(d.seasons)
+    ? d.seasons.map((s, sIdx) => {
+        const seasonNum = Number.isFinite(Number(sIdx + 1)) ? sIdx + 1 : 1;
+        return {
+          ...s,
+          season: seasonNum,
+          episodes: flattenSeasonEps(s?.episodes ?? [], videoUrls, seasonNum),
+        };
+      })
+    : d.seasons;
   return {
     success: true,
     data: {
       ...d,
       detailPath: `${kind}:${d.slug}`,
-      episodes: flattenEpisodes(d.episodes),
+      seasons,
+      episodes: flattenSeasonEps(seasons?.flatMap((s) => s?.episodes ?? []) ?? [], videoUrls, 1),
     },
   };
+};
+
+// Flatten episodes di dalam satu season — inject url dari videoUrls map + number dari path.
+const flattenSeasonEps = (episodes = [], videoUrls = {}, season = 1) => {
+  const numFromPath = (p) => {
+    const m = /Episode\s+(\d+)/i.exec(p || '');
+    return m ? parseInt(m[1], 10) : undefined;
+  };
+  return (episodes || []).map((e, i) => {
+    const link = Array.isArray(e.links) ? e.links[0] : undefined;
+    const num = e.number ?? numFromPath(e.logicalPath) ?? (i + 1);
+    const streamUrl = e.url || e.videoUrl || videoUrls[e.id] || link?.url;
+    return {
+      ...e,
+      number: num,
+      episode: num,
+      season,
+      name: e.name || `Episode ${num}`,
+      url: streamUrl,
+      mode: streamUrl ? 'hls' : (link?.type === 'HLS' ? 'hls' : 'iframe'),
+    };
+  });
 };
 
 // ── Anime filter ──
@@ -121,8 +143,8 @@ export const api = {
         ...d,
         detailPath: `comic:${d.code}`,
         slug: d.code,
-        posterUrl: d.thumbnail?.url ?? null,
-        thumbnail: d.thumbnail?.url ?? null,
+        posterUrl: d.posterUrl ?? d.thumbnail?.url ?? null,
+        thumbnail: d.posterUrl ?? d.thumbnail?.url ?? null,
         // chapters sudah dari v2 dalam bentuk [{chapter, pages: [{url,...}]}]
         chapters: d.chapters || [],
       },
@@ -138,29 +160,29 @@ export const api = {
 
   // ── Detail (anime/donghua) ──
   // detailPath = "anime:slug" / "donghua:slug" / "comic:code" / code polos.
-  // PENTING: split ':' ambigu dengan code vault "comic:manga:slug".
-  // Cek: anime/donghua punya 2 segmen; komik/vault punya 3+ segmen.
+  // vault anime slug: "anime:tv:texhnolyze-2003" (3 segments)
+  // vault donghua slug: "donghua:slug" (2 segments, but might be more)
   getDetail: async (detailPath) => {
     if (!detailPath) return { success: false, data: null };
     const parts = String(detailPath).split(':');
-    // Prefix 2-segmen: "anime:slug" / "donghua:slug"
-    if (parts.length === 2 && (parts[0] === 'anime' || parts[0] === 'donghua')) {
-      return shapeDetail(await safeGet(`/api/${parts[0]}/${parts[1]}`), parts[0]);
+    // Prefix anime/donghua: "anime:slug" atau "anime:tv:slug"
+    if (parts[0] === 'anime' || parts[0] === 'donghua') {
+      const kind = parts[0];
+      const slug = parts.slice(1).join(':');
+      return shapeDetail(await safeGet(`/api/${kind}/${encodeURIComponent(slug)}`), kind);
     }
     // Prefix komik: full code (vault "comic:type:slug") — detailPath = code.
-    // watch simpan detailPath = d.code (full vault code), bukan "comic:code".
-    if (parts.length >= 3 || parts[0] === 'comic') {
+    if (parts[0] === 'comic') {
       const code = detailPath;
       const json = await safeGet(`/api/komik/${encodeURIComponent(code)}`);
       if (json?.data) return api.getComicDetail(code);
     }
-    // slug polos → coba anime, donghua
+    // slug polos → coba anime, donghua, lalu komik
     const slug = detailPath;
-    const anime = await safeGet(`/api/anime/${slug}`);
+    const anime = await safeGet(`/api/anime/${encodeURIComponent(slug)}`);
     if (anime?.data) return shapeDetail(anime, 'anime');
-    const donghua = await safeGet(`/api/donghua/${slug}`);
+    const donghua = await safeGet(`/api/donghua/${encodeURIComponent(slug)}`);
     if (donghua?.data) return shapeDetail(donghua, 'donghua');
-    // fallback komik (code aneh)
     const komik = await safeGet(`/api/komik/${encodeURIComponent(slug)}`);
     if (komik?.data) return api.getComicDetail(slug);
     return { success: false, data: null };
